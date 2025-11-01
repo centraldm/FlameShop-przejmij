@@ -33,7 +33,7 @@ const client = new Client({
 client.once("ready", async () => {
   console.log(`✅ Zalogowano jako ${client.user.tag}`);
 
-  const guild = client.guilds.cache.get("TWOJE_GUILD_ID"); // <<< TU WPISZ ID SERWERA
+  const guild = client.guilds.cache.get("1420030272233017346"); // <<< TU WPISZ ID SERWERA
 
   if (!guild) {
     console.log("❌ Bot nie widzi serwera — sprawdź ID!");
