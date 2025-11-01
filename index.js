@@ -83,9 +83,9 @@ client.on("interactionCreate", async (interaction) => {
 
   await channel.send({ content: `<@&${MEMBER_ROLE_ID}>`, embeds: [ticketEmbed] });
 
-  // --- Logi na kanał logów
+  // --- Embed do logów (tylko jeśli logChannel != channel)
   const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
-  if (logChannel) {
+  if (logChannel && logChannel.id !== channel.id) {
     const logEmbed = new EmbedBuilder()
       .setColor("#FFA500")
       .setTitle("📌 Ticket przejęty")
