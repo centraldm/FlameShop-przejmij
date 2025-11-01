@@ -1,15 +1,15 @@
 import express from "express";
 import fetch from "node-fetch";
-import { Client, GatewayIntentBits, PermissionsBitField, EmbedBuilder } from "discord.js";
+import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-// WAZNE: ID ( NIE ZAPOMNIJ CENTRAL )
+// WAZNE: ID
 const OWNER_ROLE_ID = "1420450200308420759";
 const SELLER_ROLE_ID = "1434272957407957124";
 const MEMBER_ROLE_ID = "1420450360711057449";
 const LOG_CHANNEL_ID = "1434278499539226776";
-const GUILD_ID = "1420030272233017346"; // <<< WPISZ
+const GUILD_ID = "1420030272233017346"; // <<< WPISZ TU SWOJE ID SERWERA
 
 // --- Anti-sleep (Render) ---
 const app = express();
@@ -36,9 +36,9 @@ client.once("ready", async () => {
   console.log(`✅ Zalogowano jako ${client.user.tag}`);
 
   const guild = client.guilds.cache.get(GUILD_ID);
-  if (!guild) return console.log("❌ Bot nie widzi serwera — błędne GUILD_ID");
+  if (!guild) return console.log("❌ Bot nie widzi serwera — sprawdź GUILD_ID");
 
-  // ✅ REJESTRUJEMY KOMENDĘ TYLKO RAZ
+  // Rejestracja komendy /przejmij tylko raz
   await guild.commands.set([
     {
       name: "przejmij",
@@ -64,25 +64,26 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ content: "❌ Nie masz uprawnień.", flags: 64 });
   }
 
-  // ✅ OWNER — przejmuje ticket i ukrywa go dla pozostałych sellerów
+  // OWNER — ukrywa kanał dla reszty SELLERÓW
   if (isOwner) {
     try {
       await channel.permissionOverwrites.edit(SELLER_ROLE_ID, { ViewChannel: false });
     } catch (err) {
+      console.log("❌ Brak uprawnień do zmiany permisji kanału!", err);
       return interaction.reply({ content: "❌ Bot nie ma uprawnień do zmiany permisji!", flags: 64 });
     }
   }
 
-  // ✅ Wysyłamy embed na ticket (SAME)
-  const embed = new EmbedBuilder()
+  // --- Embed na ticket (OWNER i SELLER taki sam)
+  const ticketEmbed = new EmbedBuilder()
     .setColor("#FFA500")
     .setTitle("🎫 Ticket przejęty")
     .setDescription(`<@${member.id}> przejął ticketa.`)
     .setTimestamp();
 
-  await channel.send({ content: `<@&${MEMBER_ROLE_ID}>`, embeds: [embed] });
+  await channel.send({ content: `<@&${MEMBER_ROLE_ID}>`, embeds: [ticketEmbed] });
 
-  // ✅ Logi
+  // --- Logi na kanał logów
   const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
   if (logChannel) {
     const logEmbed = new EmbedBuilder()
@@ -94,7 +95,7 @@ client.on("interactionCreate", async (interaction) => {
     await logChannel.send({ content: `<@&${SELLER_ROLE_ID}> <@&${OWNER_ROLE_ID}>`, embeds: [logEmbed] });
   }
 
-  // ✅ Odpowiedź tylko raz
+  // ✅ Odpowiedź interaction tylko raz
   return interaction.reply({ content: "✅ Ticket przejęty!", flags: 64 });
 });
 
