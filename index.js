@@ -33,6 +33,21 @@ const client = new Client({
 client.once("ready", async () => {
   console.log(`✅ Zalogowano jako ${client.user.tag}`);
 
+  const guild = client.guilds.cache.get("TWOJE_GUILD_ID"); // <<< TU WPISZ ID SERWERA
+
+  if (!guild) {
+    console.log("❌ Bot nie widzi serwera — sprawdź ID!");
+    return;
+  }
+
+  await guild.commands.create({
+    name: "przejmij",
+    description: "Przejmij ticket (owner lub seller)"
+  });
+
+  console.log("✅ Slash command /przejmij zarejestrowana na serwerze!");
+});
+
   // Rejestracja komendy w serwerze
   const command = new SlashCommandBuilder()
     .setName("przejmij")
