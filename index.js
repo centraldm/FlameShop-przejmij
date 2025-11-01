@@ -1,6 +1,6 @@
 import express from "express";
 import fetch from "node-fetch";
-import { Client, GatewayIntentBits, PermissionsBitField, EmbedBuilder, SlashCommandBuilder } from "discord.js";
+import { Client, GatewayIntentBits, PermissionsBitField, EmbedBuilder } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -33,7 +33,7 @@ const client = new Client({
 client.once("ready", async () => {
   console.log(`✅ Zalogowano jako ${client.user.tag}`);
 
-  const guild = client.guilds.cache.get("TWOJE_GUILD_ID"); // <<< TU WPISZ ID SERWERA
+  const guild = client.guilds.cache.get("1420030272233017346"); // <<< TU WPISZ ID SERWERA
 
   if (!guild) {
     console.log("❌ Bot nie widzi serwera — sprawdź ID!");
@@ -46,14 +46,6 @@ client.once("ready", async () => {
   });
 
   console.log("✅ Slash command /przejmij zarejestrowana na serwerze!");
-});
-
-  // Rejestracja komendy w serwerze
-  const command = new SlashCommandBuilder()
-    .setName("przejmij")
-    .setDescription("Przejmij ticket (owner lub seller)");
-
-  await client.application.commands.create(command);
 });
 
 client.on("interactionCreate", async (interaction) => {
