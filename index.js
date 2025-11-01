@@ -56,20 +56,25 @@ client.on("interactionCreate", async (interaction) => {
   const channel = interaction.channel;
   const guild = interaction.guild;
 
-  // ✅ OWNER albo SELLER może użyć komendy
-  if (
-    !member.roles.cache.has(OWNER_ROLE_ID) &&
-    !member.roles.cache.has(SELLER_ROLE_ID)
-  ) {
+  // ✅ Sprawdzenie ról
+  const isOwner = member.roles.cache.has(OWNER_ROLE_ID);
+  const isSeller = member.roles.cache.has(SELLER_ROLE_ID);
+
+  if (!isOwner && !isSeller) {
     return interaction.reply({ content: "❌ Nie masz uprawnień.", ephemeral: true });
   }
 
-  // ✅ Odebranie widoczności reszcie SELLERÓW
-  await channel.permissionOverwrites.edit(SELLER_ROLE_ID, {
-    ViewChannel: false
-  });
+  // ✅ Jeśli owner, to zabieramy widoczność reszcie sellerów
+  if (isOwner) {
+    try {
+      await channel.permissionOverwrites.edit(SELLER_ROLE_ID, { ViewChannel: false });
+    } catch (err) {
+      console.log("❌ Brak uprawnień do zmiany permisji kanału!", err);
+      return interaction.reply({ content: "❌ Bot nie ma uprawnień do zmiany permisji kanału.", ephemeral: true });
+    }
+  }
 
-  // ✅ Wiadomość na ticket
+  // ✅ Wysyłamy embed na ticket (dla ownera i sellera taki sam)
   const embed = new EmbedBuilder()
     .setColor("#FFA500")
     .setTitle("🎫 Ticket przejęty")
