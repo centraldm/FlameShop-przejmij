@@ -1,0 +1,17 @@
+{
+  "name": "discord-ticket-bot",
+  "version": "1.0.0",
+  "description": "Discord ticket bot with keep-alive for Render",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "build": "echo \"✅ Nic do buildowania\""
+  },
+  "dependencies": {
+    "discord.js": "^14.15.0",
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
+  }
+}
