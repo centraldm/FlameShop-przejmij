@@ -4,7 +4,7 @@ import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-// WAZNE: ID ROLE + GUILD
+// 🔧 ID RÓL I SERWERA
 const OWNER_ROLE_ID = "1420450200308420759";
 const SELLER_ROLE_ID = "1434272957407957124";
 const MEMBER_ROLE_ID = "1420450360711057449";
@@ -16,13 +16,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 app.get("/", (req, res) => res.send("✅ Bot działa i nie śpi 😎"));
 app.listen(PORT, () => console.log(`🌍 Keep-alive aktywny na porcie: ${PORT}`));
+
 setInterval(() => {
-  if (process.env.RENDER_EXTERNAL_URL) fetch(`https://${process.env.RENDER_EXTERNAL_URL}`)
-    .then(() => console.log('🔁 Ping wysłany'))
-    .catch(() => console.log('🔁 Ping nieudany'));
+  if (process.env.RENDER_EXTERNAL_URL) {
+    fetch(`https://${process.env.RENDER_EXTERNAL_URL}`)
+      .then(() => console.log("🔁 Ping wysłany"))
+      .catch(() => console.log("🔁 Ping nieudany"));
+  }
 }, 5 * 60 * 1000);
 
-// --- BOT ---
+// --- BOT CONFIG ---
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -38,7 +41,7 @@ client.once("ready", async () => {
   const guild = client.guilds.cache.get(GUILD_ID);
   if (!guild) return console.log("❌ Bot nie widzi serwera — sprawdź GUILD_ID");
 
-  // Rejestrujemy TYLKO 1 komendę
+  // Rejestracja komend
   await guild.commands.set([
     {
       name: "przejmij",
@@ -46,7 +49,7 @@ client.once("ready", async () => {
     }
   ]);
 
-  console.log("✅ Komenda /przejmij załadowana!");
+  console.log("✅ /przejmij załadowane!");
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -64,34 +67,32 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ content: "❌ Nie masz uprawnień.", flags: 64 });
   }
 
-  // ✅ ZABLOKUJ CAŁĄ ROLĘ SELLER
   try {
+    // ❌ Wyłącz widok dla całej roli SELLER
     await channel.permissionOverwrites.edit(SELLER_ROLE_ID, { ViewChannel: false });
 
-    // ✅ PRZEJMUJĄCY SELLER/OWNER ma widzieć
+    // ✅ Seller który przejął ticket — widzi
     await channel.permissionOverwrites.edit(member.id, { ViewChannel: true });
 
-    // ✅ OWNER zawsze widzi
+    // ✅ Owner — zawsze widzi
     await channel.permissionOverwrites.edit(OWNER_ROLE_ID, { ViewChannel: true });
 
-    // ✅ MEMBERS ZAWSZE widzą — upewniamy się
-    await channel.permissionOverwrites.edit(MEMBER_ROLE_ID, { ViewChannel: true });
-
+    // ❌ Members NIGDY nie widzą — nie zmieniamy permisji, ticket creator już ma swoje
   } catch (err) {
-    console.log("❌ Błąd zmiany permisji kanału:", err);
-    return interaction.reply({ content: "❌ Bot nie ma uprawnień do edycji kanału!", flags: 64 });
+    console.log("❌ Błąd permisji:", err);
+    return interaction.reply({ content: "❌ Bot nie ma uprawnień do zmiany dostępu!", flags: 64 });
   }
 
-  // ✅ EMBED NA TICKET
+  // ✅ Embed na ticket
   const ticketEmbed = new EmbedBuilder()
     .setColor("#FFA500")
     .setTitle("🎫 Ticket przejęty")
     .setDescription(`<@${member.id}> przejął ticketa.`)
     .setTimestamp();
 
-  await channel.send({ content: `<@&${MEMBER_ROLE_ID}>`, embeds: [ticketEmbed] });
+  await channel.send({ embeds: [ticketEmbed] });
 
-  // ✅ LOGI
+  // ✅ Logi
   const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
   if (logChannel) {
     const logEmbed = new EmbedBuilder()
@@ -100,7 +101,7 @@ client.on("interactionCreate", async (interaction) => {
       .setDescription(`Użytkownik: <@${member.id}>\nTicket: ${channel.name}`)
       .setTimestamp();
 
-    await logChannel.send({ content: `<@&${SELLER_ROLE_ID}> <@&${OWNER_ROLE_ID}>`, embeds: [logEmbed] });
+    await logChannel.send({ embeds: [logEmbed] });
   }
 
   return interaction.reply({ content: "✅ Ticket przejęty!", flags: 64 });
