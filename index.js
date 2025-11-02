@@ -16,10 +16,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 app.get("/", (req, res) => res.send("✅ Bot działa i nie śpi 😎"));
 app.listen(PORT, () => console.log(`🌍 Keep-alive aktywny na porcie: ${PORT}`));
+
 setInterval(() => {
-  if (process.env.RENDER_EXTERNAL_URL) fetch(`https://${process.env.RENDER_EXTERNAL_URL}`)
-    .then(() => console.log("🔁 Ping wysłany"))
-    .catch(() => console.log("🔁 Ping nieudany"));
+  if (process.env.RENDER_EXTERNAL_URL) {
+    fetch(`https://${process.env.RENDER_EXTERNAL_URL}`).catch(() => console.log("🔁 Ping nieudany"));
+  }
 }, 5 * 60 * 1000);
 
 // === Discord Bot ===
@@ -62,28 +63,27 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   try {
-    // Pobieramy autora ticketa
+    // Pobierz autora ticketa (pierwsza wiadomość w kanale z wzmianką)
     const messages = await channel.messages.fetch({ limit: 10 }).catch(() => null);
     const firstMessage = messages?.last();
-    
     let ticketCreator = null;
     if (firstMessage && firstMessage.mentions?.users.size > 0) {
       ticketCreator = firstMessage.mentions.users.first().id;
     }
 
-    // ❌ Ukrywamy dla wszystkich SELLERÓW
+    // ❌ Ukryj przed wszystkimi SELLERAMI
     await channel.permissionOverwrites.edit(SELLER_ROLE_ID, { ViewChannel: false });
 
-    // ❌ Ukrywamy dla MEMBERS roli
+    // ❌ Ukryj przed MEMBERS
     await channel.permissionOverwrites.edit(MEMBER_ROLE_ID, { ViewChannel: false });
 
-    // ✅ Osoba przejmująca widzi
+    // ✅ Widoczność dla osoby przejmującej
     await channel.permissionOverwrites.edit(member.id, { ViewChannel: true });
 
-    // ✅ Owner widzi
+    // ✅ Owner widzi zawsze
     await channel.permissionOverwrites.edit(OWNER_ROLE_ID, { ViewChannel: true });
 
-    // ✅ Autor ticketa widzi (jeśli inny niż przejmujący)
+    // ✅ Autor ticketa widzi
     if (ticketCreator && ticketCreator !== member.id) {
       await channel.permissionOverwrites.edit(ticketCreator, { ViewChannel: true });
     }
@@ -93,16 +93,17 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ content: "❌ Bot nie ma uprawnień do zmian kanału!", flags: 64 });
   }
 
-  // Wysyłamy embed do ticketa
+  // === Ticket embed ===
   const ticketEmbed = new EmbedBuilder()
     .setColor("#FFA500")
     .setTitle("🎫 Ticket przejęty")
     .setDescription(`<@${member.id}> przejął ticketa.`)
     .setTimestamp();
 
-  await channel.send({ embeds: [ticketEmbed] });
+  // Wysyłamy embed + mention dla members
+  await channel.send({ content: `<@&${MEMBER_ROLE_ID}>`, embeds: [ticketEmbed] });
 
-  // Wysyłamy log
+  // === Log embed ===
   const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
   if (logChannel && logChannel.id !== channel.id) {
     const logEmbed = new EmbedBuilder()
@@ -111,7 +112,8 @@ client.on("interactionCreate", async (interaction) => {
       .setDescription(`Użytkownik: <@${member.id}>\nTicket: ${channel.name}`)
       .setTimestamp();
 
-    await logChannel.send({ embeds: [logEmbed] });
+    // Mention sellerów i ownera
+    await logChannel.send({ content: `<@&${SELLER_ROLE_ID}> <@&${OWNER_ROLE_ID}>`, embeds: [logEmbed] });
   }
 
   return interaction.reply({ content: "✅ Ticket przejęty!", flags: 64 });
