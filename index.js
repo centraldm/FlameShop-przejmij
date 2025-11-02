@@ -63,7 +63,7 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   try {
-    // Pobierz autora ticketa (pierwsza wiadomość w kanale z wzmianką)
+    // Pobierz autora ticketa (pierwsza wiadomość z wzmianką)
     const messages = await channel.messages.fetch({ limit: 10 }).catch(() => null);
     const firstMessage = messages?.last();
     let ticketCreator = null;
@@ -83,7 +83,7 @@ client.on("interactionCreate", async (interaction) => {
     // ✅ Owner widzi zawsze
     await channel.permissionOverwrites.edit(OWNER_ROLE_ID, { ViewChannel: true });
 
-    // ✅ Autor ticketa widzi
+    // ✅ Autor ticketa widzi (jeśli nie jest osobą przejmującą)
     if (ticketCreator && ticketCreator !== member.id) {
       await channel.permissionOverwrites.edit(ticketCreator, { ViewChannel: true });
     }
@@ -93,29 +93,28 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ content: "❌ Bot nie ma uprawnień do zmian kanału!", flags: 64 });
   }
 
-  // === Ticket embed ===
+  // === Ticket embed (tylko raz + ping dla members) ===
   const ticketEmbed = new EmbedBuilder()
     .setColor("#FFA500")
-    .setTitle("🎫 Ticket przejęty")
+    .setTitle("🔥 Ticket przejęty")
     .setDescription(`<@${member.id}> przejął ticketa.`)
     .setTimestamp();
 
-  // Wysyłamy embed + mention dla members
   await channel.send({ content: `<@&${MEMBER_ROLE_ID}>`, embeds: [ticketEmbed] });
 
-  // === Log embed ===
+  // === Log embed (tylko raz + ping dla seller i owner) ===
   const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
   if (logChannel && logChannel.id !== channel.id) {
     const logEmbed = new EmbedBuilder()
       .setColor("#FFA500")
-      .setTitle("📌 Ticket przejęty")
+      .setTitle("🔥 Ticket przejęty")
       .setDescription(`Użytkownik: <@${member.id}>\nTicket: ${channel.name}`)
       .setTimestamp();
 
-    // Mention sellerów i ownera
     await logChannel.send({ content: `<@&${SELLER_ROLE_ID}> <@&${OWNER_ROLE_ID}>`, embeds: [logEmbed] });
   }
 
+  // ✅ Interaction reply tylko z krótkim potwierdzeniem
   return interaction.reply({ content: "✅ Ticket przejęty!", flags: 64 });
 });
 
