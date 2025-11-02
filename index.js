@@ -4,12 +4,12 @@ import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-// WAZNE: ID
+// WAZNE: ID ROLE + GUILD
 const OWNER_ROLE_ID = "1420450200308420759";
 const SELLER_ROLE_ID = "1434272957407957124";
 const MEMBER_ROLE_ID = "1420450360711057449";
 const LOG_CHANNEL_ID = "1434278499539226776";
-const GUILD_ID = "1420030272233017346"; // <<< WPISZ TU SWOJE ID SERWERA
+const GUILD_ID = "1420030272233017346";
 
 // --- Anti-sleep (Render) ---
 const app = express();
@@ -38,15 +38,15 @@ client.once("ready", async () => {
   const guild = client.guilds.cache.get(GUILD_ID);
   if (!guild) return console.log("❌ Bot nie widzi serwera — sprawdź GUILD_ID");
 
-  // Rejestracja komendy /przejmij tylko raz
+  // Rejestrujemy TYLKO 1 komendę
   await guild.commands.set([
     {
       name: "przejmij",
-      description: "Przejmij ticket (owner = przejęcie, seller = info)"
+      description: "Przejmij ticket"
     }
   ]);
 
-  console.log("✅ /przejmij załadowane!");
+  console.log("✅ Komenda /przejmij załadowana!");
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -64,17 +64,25 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ content: "❌ Nie masz uprawnień.", flags: 64 });
   }
 
-  // OWNER — ukrywa kanał dla reszty SELLERÓW
-  if (isOwner) {
-    try {
-      await channel.permissionOverwrites.edit(SELLER_ROLE_ID, { ViewChannel: false });
-    } catch (err) {
-      console.log("❌ Brak uprawnień do zmiany permisji kanału!", err);
-      return interaction.reply({ content: "❌ Bot nie ma uprawnień do zmiany permisji!", flags: 64 });
-    }
+  // ✅ ZABLOKUJ CAŁĄ ROLĘ SELLER
+  try {
+    await channel.permissionOverwrites.edit(SELLER_ROLE_ID, { ViewChannel: false });
+
+    // ✅ PRZEJMUJĄCY SELLER/OWNER ma widzieć
+    await channel.permissionOverwrites.edit(member.id, { ViewChannel: true });
+
+    // ✅ OWNER zawsze widzi
+    await channel.permissionOverwrites.edit(OWNER_ROLE_ID, { ViewChannel: true });
+
+    // ✅ MEMBERS ZAWSZE widzą — upewniamy się
+    await channel.permissionOverwrites.edit(MEMBER_ROLE_ID, { ViewChannel: true });
+
+  } catch (err) {
+    console.log("❌ Błąd zmiany permisji kanału:", err);
+    return interaction.reply({ content: "❌ Bot nie ma uprawnień do edycji kanału!", flags: 64 });
   }
 
-  // --- Embed na ticket (OWNER i SELLER taki sam)
+  // ✅ EMBED NA TICKET
   const ticketEmbed = new EmbedBuilder()
     .setColor("#FFA500")
     .setTitle("🎫 Ticket przejęty")
@@ -83,9 +91,9 @@ client.on("interactionCreate", async (interaction) => {
 
   await channel.send({ content: `<@&${MEMBER_ROLE_ID}>`, embeds: [ticketEmbed] });
 
-  // --- Embed do logów (tylko jeśli logChannel != channel)
+  // ✅ LOGI
   const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
-  if (logChannel && logChannel.id !== channel.id) {
+  if (logChannel) {
     const logEmbed = new EmbedBuilder()
       .setColor("#FFA500")
       .setTitle("📌 Ticket przejęty")
@@ -95,7 +103,6 @@ client.on("interactionCreate", async (interaction) => {
     await logChannel.send({ content: `<@&${SELLER_ROLE_ID}> <@&${OWNER_ROLE_ID}>`, embeds: [logEmbed] });
   }
 
-  // ✅ Odpowiedź interaction tylko raz
   return interaction.reply({ content: "✅ Ticket przejęty!", flags: 64 });
 });
 
